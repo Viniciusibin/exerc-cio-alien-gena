@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercício do Alien</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style> body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; } </style>
+</head>
+
+<body>
+<script>
+// o que acontece aqui? É criado constantes para serem usadas na configuração abaixo
+// const larguraJogo = 700;
+// const alturaJogo = 850;
+
+var gameState= {
+    larguraJogo: 700,
+    alturaJogo: 850,
+
+}
+
+// o que essa parte faz? Definição do tipo, altura e largura do jogo
+const config = {
+    type: Phaser.AUTO,
+    width: gameState.larguraJogo,
+    height: gameState.alturaJogo,
+    //adicionando física ao jogo
+    physics:{
+        default: 'arcade',
+        arcade:{
+            gravity:{y:300},
+            debug: true
+        }
+    },
+
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+// o que acontece aqui? Utilizando as configurações que colocamos acima criamos um game
+const game = new Phaser.Game(config);
+    
+var alien;
+var cursors;
+var keyb;
+var fogo;
+var plataforma;
+var moeda;
+var placar;
+var score = 0;
+var posicaoMoeda;
+var passaro
+var texto
+
+function preload() {
+    this.load.image('background', 'assets/bg.png');
+    this.load.image('alien','assets/alienigena.png');
+    this.load.image('turbo','assets/turbo.png');
+    this.load.image('plataforma','assets/tijolos.png');
+    this.load.image('moeda','assets/moeda.png');
+    this.load.spritesheet('bird','assets/bird-purple.png',{ frameWidth: 75, frameHeight: 75 }); //criando o boneco(passaro)
+            // utilização do spritesheet para cortar a imagem bird em frameWidth e frameheig
+}
+
+function create(){
+    // o que acontece aqui? Foi adicionado uma imagem do tamanho da tela do jogo
+    this.add.image(gameState.larguraJogo/2, gameState.alturaJogo/2, 'background');
+    //adicionando o turbo
+    turbo = this.add.sprite(0, 0, 'turbo').setScale(1.3);
+    
+    turbo.setVisible(false);
+   
+    //adicionando physics no alien
+    alien = this.physics.add.sprite(gameState.larguraJogo/2,0 , 'alien');
+    
+    cursors = this.input.keyboard.createCursorKeys(); //adicionando o cursors para mover o personagem no teclado
+
+    keybA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A); //adicionando movimento na letra A
+
+    keybD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D); //adicionando movimento na letra D
+
+    keybW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W); //adicionando movimento na letra W
+
+    keybS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S); //adicionando movimento na letra S
+   
+    //adicionando physics na plataforma
+    plataforma = this.physics.add.staticImage(gameState.larguraJogo/2, gameState.alturaJogo/2, 'plataforma');
+    
+    this.physics.add.collider(alien, plataforma);
+    
+    //adicionando physics na moeda
+    
+    moeda = this.physics.add.sprite(20,0,'moeda');
+    
+    moeda.setCollideWorldBounds(true);
+    
+    moeda.setBounce(0.7);
+    
+    this.physics.add.collider(moeda, plataforma);
+
+    // adicionando placar 
+    
+    placar = this.add.text(50, 225, 'Moedas: 0', {fontSize:'45px', fill:'#495613'});
+    
+    //quando o alien encostar na moeda
+    
+    this.physics.add.overlap(alien, moeda, function(){
+        moeda.setVisible(false); //ficar invisível
+
+        var posicaoMoeda_Y = Phaser.Math.RND.between(50, 650);//cai em ummponto aleatório no eixo y
+        moeda.setPosition(posicaoMoeda_Y, 100); //ajusta a posicão da moeda
+        score++; //soma a pontuação
+        placar.setText('Moedas:' + score);//atualiza a pontuação no placar
+        moeda.setVisible(true); //ativa a nova moeda
+    });
+    passaro = this.physics.add.sprite(200,200,'bird').setScale(1.2)
+    passaro.body.setAllowGravity(false);
+    this.anims.create({
+    key: 'fly', // definição key
+     frames: this.anims.generateFrameNumbers('bird', // escolha da imagem para animação
+    {start: 0, end: 7 // escolha do primeiro e último frame a ser utilzado
+    }),
+    frameRate: 10, // definição da velocidade do Frame
+    repeat: -1, // colocando para repetir infinitamente
+});
+    
+    passaro.anims.play('fly',true); // colocando a animação com a key para funcionar
+    this.physics.add.collider(passaro, alien, function(){
+        console.log("Colisão entre alien e passaro!");
+        this.physics.pause();
+    },null, this);
+   //adicionando colisão nas bordas
+    alien.setCollideWorldBounds(true);
+
+    texto = this.add.text(100, 200, 'pegue moedas sem encostar no pássaro!', { fontSize: '20px', fill: '#000' });
+   
+    
+}
+
+function update(){
+    //definição do movimento ir para direita
+    
+    if (cursors.left.isDown || keybA.isDown){
+    
+        alien.setVelocityX(-180);}
+    
+        //definição do movimento ir para esquerda
+    
+        else if (cursors.right.isDown || keybD.isDown) {
+
+    alien.setVelocityX(+250);
+    }
+    else {alien.setVelocityX(0)};
+    
+    //definição do movimento cima
+    
+    if (cursors.up.isDown || keybW.isDown) {
+        alien.setVelocityY(-250);
+        turbo.setVisible(true)
+    } 
+    else {turbo.setVisible(false);}
+    
+    turbo.setPosition(alien.x, alien.y +alien.height/2)
+    
+    if (passaro.x === 200) 
+    { 
+    passaro.setFlip(false, false); // o pássaro não irá inverter
+    passaro.ida = true; // definindo a ida
+    }
+    if (passaro.x < 700 && passaro.ida === true) // definição das condições
+    {
+    passaro.setFlip(false, false); // o pássaro não irá inverter
+    passaro.x += 5; // quando o pássaro tiver as condições acima, ele irá andar +5 no eixo x
+    }
+
+    if (passaro.x === 700) // definindo a condição
+    { 
+    passaro.setFlip(true, false); // o pássaro irá inverter no eixo x
+    passaro.ida = false; // definindo a mudança de direção
+    }
+    if (passaro.x > 200 && passaro.ida === false) // definição das condições
+    {  
+    passaro.x -= 5; // definindo a afirmação
+    }
+    // EIXO Y
+    if (passaro.y === 200)  // definição da condição
+            {
+                passaro.idaY = true; // definição da idaY
+            }
+            if (passaro.y <= 620 && passaro.idaY === true) // definição da condição
+            {
+                passaro.y += 1.5; // definição da afirmação: quando o pássaro tiver as condições acima ele irá descer +1.5
+
+            }
+            if (passaro.y >= 620 ) // definição da condição
+            {
+                passaro.idaY = false; // definição da afirmação (mudança de direção)
+            }
+            if (passaro.y > 200 && passaro.idaY === false) // definição da condição
+             {
+                passaro.y -= 1.5; // definição da afirmação: quando o pássaro tiver as condições acima ele irá subir -1.5
+               
+             }
+             while( passaro.x === Phaser.Math.RND.between(50, 650))
+             { console.log ('olha o passarinho')
+            break
+            };
+
+    };
+
+</script>
+</body>
+</html>
